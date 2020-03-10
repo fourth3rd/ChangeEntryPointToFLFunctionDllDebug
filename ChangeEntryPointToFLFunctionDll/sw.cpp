@@ -84,7 +84,7 @@ void Decrypt(int Raw, int VA, int PointerToRawData, int Size)
 */
 int main()
 {
-	FILE* fp = fopen("DllEntryPointToFLFunctionOriginal.dll", "rb");
+	FILE* fp = fopen("DllEntryPointToFLFunctionBOriginal.dll", "rb");
 
 	if(fp)
 	{
@@ -97,7 +97,7 @@ int main()
 		fread(buf, stSize, 1, fp);
 
 		fclose(fp);
-		fp = fopen(R"(DllEntryPointToFLFunction.dll)", "wb");
+		fp = fopen(R"(DllEntryPointToFLFunctionB.dll)", "wb");
 		fseek(fp, 0, SEEK_SET);
 
 		PIMAGE_DOS_HEADER pDosH;
@@ -237,124 +237,9 @@ int main()
 
 		buf[stSize + i32stSizeCnt++] = '\x60';
 
-		buf[stSize + i32stSizeCnt++] = '\x64';
-		buf[stSize + i32stSizeCnt++] = '\xa1';
-		buf[stSize + i32stSizeCnt++] = '\x18';
-		buf[stSize + i32stSizeCnt++] = '\x0';
-		buf[stSize + i32stSizeCnt++] = '\x0';
-		buf[stSize + i32stSizeCnt++] = '\x0';
-
 		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\x40';
-		buf[stSize + i32stSizeCnt++] = '\x30';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\x40';
-		buf[stSize + i32stSizeCnt++] = '\x0c';
-
-		buf[stSize + i32stSizeCnt++] = '\x8d';
-		buf[stSize + i32stSizeCnt++] = '\x58';
-		buf[stSize + i32stSizeCnt++] = '\x0c';
-
-		buf[stSize + i32stSizeCnt++] = '\x89';// ebp orgptr
-		buf[stSize + i32stSizeCnt++] = '\x5d';
-		buf[stSize + i32stSizeCnt++] = '\xa0';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\x13';
-
-		buf[stSize + i32stSizeCnt++] = '\x89';//ebp curptr
-		buf[stSize + i32stSizeCnt++] = '\x55';
-		buf[stSize + i32stSizeCnt++] = '\xa4';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\x7a';
-		buf[stSize + i32stSizeCnt++] = '\x30';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\x72';
-		buf[stSize + i32stSizeCnt++] = '\x18';
-
-		buf[stSize + i32stSizeCnt++] = '\x85';
-		buf[stSize + i32stSizeCnt++] = '\xff';
-
-		buf[stSize + i32stSizeCnt++] = '\x74';
-		buf[stSize + i32stSizeCnt++] = '\x23';
-
-		buf[stSize + i32stSizeCnt++] = '\x53';
-		buf[stSize + i32stSizeCnt++] = '\x52';
-
-		buf[stSize + i32stSizeCnt++] = '\xb9';
-		buf[stSize + i32stSizeCnt++] = '\x0';
-		buf[stSize + i32stSizeCnt++] = '\x0';
-		buf[stSize + i32stSizeCnt++] = '\x0';
-		buf[stSize + i32stSizeCnt++] = '\x0';
-
-		buf[stSize + i32stSizeCnt++] = '\x0f';
-		buf[stSize + i32stSizeCnt++] = '\xbe';
-		buf[stSize + i32stSizeCnt++] = '\x14';
-		buf[stSize + i32stSizeCnt++] = '\x0f';
-
-		
-		char cFLStart[4] = { 0, };
-		memcpy((void*)&cFLStart, (void*)&i32FLStart, 4);
-		buf[stSize + i32stSizeCnt++] = '\x0f';
-		buf[stSize + i32stSizeCnt++] = '\xbe';
-		buf[stSize + i32stSizeCnt++] = '\x9c';
-		buf[stSize + i32stSizeCnt++] = '\x0e';
-		buf[stSize + i32stSizeCnt++] = cFLStart[0];
-		buf[stSize + i32stSizeCnt++] = cFLStart[1];
-		buf[stSize + i32stSizeCnt++] = cFLStart[2];
-		buf[stSize + i32stSizeCnt++] = cFLStart[3];
-
-		buf[stSize + i32stSizeCnt++] = '\x3b';
-		buf[stSize + i32stSizeCnt++] = '\xda';
-
-		buf[stSize + i32stSizeCnt++] = '\x75';
-		buf[stSize + i32stSizeCnt++] = '\x0c';
-
-		buf[stSize + i32stSizeCnt++] = '\x83';
-		buf[stSize + i32stSizeCnt++] = '\xc1';
-		buf[stSize + i32stSizeCnt++] = '\x01';
-
-		buf[stSize + i32stSizeCnt++] = '\x83';
-		buf[stSize + i32stSizeCnt++] = '\xf9';
-		buf[stSize + i32stSizeCnt++] = '\x1d';
-
-		buf[stSize + i32stSizeCnt++] = '\x75';
-		buf[stSize + i32stSizeCnt++] = '\xe8';
-
-		buf[stSize + i32stSizeCnt++] = '\x5a';
-
-		buf[stSize + i32stSizeCnt++] = '\x5b';
-
-		buf[stSize + i32stSizeCnt++] = '\x74';
-		buf[stSize + i32stSizeCnt++] = '\x0e';
-
-		buf[stSize + i32stSizeCnt++] = '\x5a';
-
-		buf[stSize + i32stSizeCnt++] = '\x5b';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';// ebp curptr
-		buf[stSize + i32stSizeCnt++] = '\x5d';
-		buf[stSize + i32stSizeCnt++] = '\xa4';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\x1b';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';// ebp orgptr
-		buf[stSize + i32stSizeCnt++] = '\x55';
-		buf[stSize + i32stSizeCnt++] = '\xa0';
-
-		buf[stSize + i32stSizeCnt++] = '\x3b';
-		buf[stSize + i32stSizeCnt++] = '\xda';
-
-		buf[stSize + i32stSizeCnt++] = '\x75';
-		buf[stSize + i32stSizeCnt++] = '\xc0';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\x42';
-		buf[stSize + i32stSizeCnt++] = '\x18';
+		buf[stSize + i32stSizeCnt++] = '\xc2';
+	//	buf[stSize + i32stSizeCnt++] = '\x18';
 
 		char cChangeEntryPoint[4] = { 0, };
 		int i32CheckChangeEntryPoint = FLSection.RVA + 0xf0;

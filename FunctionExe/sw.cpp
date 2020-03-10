@@ -1,16 +1,16 @@
 #include<stdio.h>
 #include<Windows.h>
-#pragma comment(lib,"DllEntryPointToFLFunction.lib")
+//#pragma comment(lib,"DllEntryPointToFLFunction.lib")
 
-extern "C" __declspec(dllimport) void PrintHelloA();
+//extern "C" __declspec(dllimport) void PrintHelloA();
 
 int main()
 {
-    //HMODULE hModule = LoadLibrary(L"DllEntryPointToFLFunction");
+    HMODULE hModule = LoadLibrary(L"DllEntryPointToFLFunction");
 
-	//FARPROC fFuntion = GetProcAddress(hModule, "PrintHelloA");
+	FARPROC fFuntion = GetProcAddress(hModule, "PrintHelloA");
 
-	//fFuntion();
-	PrintHelloA();
+	fFuntion();
+	//PrintHelloA();
 }
 
