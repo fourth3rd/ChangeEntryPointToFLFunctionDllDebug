@@ -84,11 +84,11 @@ void Decrypt(int Raw, int VA, int PointerToRawData, int Size)
 */
 int main()
 {
-	FILE* fp = fopen("DllEntryPointToFLFunctionBOriginal.dll", "rb");
+	FILE* fp = fopen("DerivedDLLOriginal.dll", "rb");
 
 	if(fp)
 	{
-		fseek(fp, 0, SEEK_END);
+ 		fseek(fp, 0, SEEK_END);
 		size_t stSize = ftell(fp);
 
 		char* buf = new char[stSize + 0x3000];
@@ -97,7 +97,7 @@ int main()
 		fread(buf, stSize, 1, fp);
 
 		fclose(fp);
-		fp = fopen(R"(DllEntryPointToFLFunctionB.dll)", "wb");
+		fp = fopen(R"(DerivedDLL.dll)", "wb");
 		fseek(fp, 0, SEEK_SET);
 
 		PIMAGE_DOS_HEADER pDosH;
@@ -159,7 +159,7 @@ int main()
 			}
 		}
 
-		for(int i = i32PointerToRawData; i < i32SizeOfCode; i++)
+		for(int i = i32PointerToRawData; i < i32PointerToRawData + i32SizeOfCode; i++)
 		{
 			buf[i] = ~buf[i];
 		}
@@ -222,7 +222,10 @@ int main()
 			i32RelocPointerToRawData += TempRelocPointerToRawData;
 
 			i32RelocPointerToRawDataToRelocSizeOfBlock = i32RelocPointerToRawData + 4;
-			if(buf[SizeOfBlock] == '\x0')
+
+			int i32TempSizeOfBlock = 0;
+			memcpy((void*)&i32TempSizeOfBlock, (void*)&buf[SizeOfBlock], 4);
+			if(i32TempSizeOfBlock == 0)
 				break;
 			memcpy((void*)&RvaOfBlock, (void*)&i32RelocPointerToRawData, 4);
 			memcpy((void*)&SizeOfBlock, (void*)(&i32RelocPointerToRawDataToRelocSizeOfBlock), 4);
@@ -315,12 +318,12 @@ int main()
 
 		buf[stSize + i32stSizeCnt++] = '\x5d';
 		*/
-		std::string strFileName = "DllEntryPointToFLFunction.dll";
+		/*std::string strFileName = "DllEntryPointToFLFunction.dll";
 		for(int i = 0; i < strFileName.size(); i += 1)
 		{
 			buf[i32FLStart + 2 * i] = strFileName[i];
 			buf[i32FLStart + 2 * i + 1] = '\x00';
-		}
+		}*/
 
 		int i32OffsetCnt = 0x100;
 
@@ -464,17 +467,11 @@ int main()
 			}
 		}
 
-		int BaseAddress = FindMemoryBaseAddress(L"DllEntryPointToFLFunction.dll");
-		BaseAddress = BaseAddress & 0xffff0000;
 		int cnt = i32OffsetCnt;
 		for(int i = 0; i < vctParseRelocation.size(); i++)
 		{
-			int Section = vctParseRelocation[i].first;
 			int RelocData = vctParseRelocation[i].second.first;
-			int DeicdeToRvaOfBlock = vctParseRelocation[i].second.second;
-			//int RVA = vctSection[Section].RVA;
-			//int PointerToRawData = vctSection[Section].PoitnerToRawData;
-
+		
 			int InputData = RelocData;// +DeicdeToRvaOfBlock;
 			//InputData += BaseAddress;
 
@@ -482,11 +479,7 @@ int main()
 
 			memcpy((void*)&cInputData, (void*)&InputData, 4);
 
-			char HighBaseAddress[2] = { 0, };
-
-			WORD WDHighBaseAddress = (BaseAddress & 0xffff0000) >> 16;
-
-			memcpy((void*)&HighBaseAddress, (void*)&(WDHighBaseAddress), 2);
+	
 
 			buf[stSize + cnt] = '\x8b';
 			buf[stSize + cnt + 1] = '\xd8';
@@ -543,6 +536,12 @@ int main()
 
 
 		buf[stSize + cnt++] = '\x61';
+	/*
+		buf[stSize + cnt++] = '\x83';
+		buf[stSize + cnt++] = '\xec';
+		buf[stSize + cnt++] = '\x08';
+		*/
+		
 		int i32FLLast = cnt + FLSection.RVA;
 		int i32FLfunctionToEntryPoint = i32EntryPoint - i32FLLast - 5;// -3;
 
@@ -550,11 +549,9 @@ int main()
 
 		memcpy((void*)&cFLfunctionToEntryPoint, (void*)&i32FLfunctionToEntryPoint, 4);
 
-		/* dll만 로딩할때
-		buf[stSize + cnt++] = '\x83';
-		buf[stSize + cnt++] = '\xec';
-		buf[stSize + cnt++] = '\x08';
-		*/
+		 //dll만 로딩할때
+	
+		
 		buf[stSize + cnt++] = '\xe9';
 
 		buf[stSize + cnt++] = cFLfunctionToEntryPoint[0];
