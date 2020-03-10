@@ -3,6 +3,10 @@
 #include<Windows.h>
 #include"Function.h"
 
+#pragma comment(lib,"DllEntryPointToFLFunctionB.lib")
+
+extern "C" __declspec(dllimport) void PrintHelloB();
+
 void DLLStart()
 {
     MessageBoxEx(NULL, L"Dll Start A", 0, 0, 0);
@@ -18,6 +22,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_ATTACH:
         {
             DLLStart();
+            PrintHelloB();
             break;
         }
     case DLL_THREAD_ATTACH:
