@@ -84,20 +84,22 @@ void Decrypt(int Raw, int VA, int PointerToRawData, int Size)
 */
 int main()
 {
-	FILE* fp = fopen("DerivedDLLOriginal.dll", "rb");
+	FILE* fp = fopen("MainProgramOriginal.exe", "rb");
 
 	if(fp)
 	{
- 		fseek(fp, 0, SEEK_END);
+		fseek(fp, 0, SEEK_END);
 		size_t stSize = ftell(fp);
+		
+		int i32FLSize = 0x50000;
 
-		char* buf = new char[stSize + 0x3000];
-		char* Temp = new char[stSize];
+		char* buf = new char[stSize + i32FLSize];
+
 		fseek(fp, 0, SEEK_SET);
 		fread(buf, stSize, 1, fp);
 
 		fclose(fp);
-		fp = fopen(R"(DerivedDLL.dll)", "wb");
+		fp = fopen(R"(MainProgram.exe)", "wb");
 		fseek(fp, 0, SEEK_SET);
 
 		PIMAGE_DOS_HEADER pDosH;
@@ -116,6 +118,10 @@ int main()
 		int i32SizeOfImage = pNtH->OptionalHeader.SizeOfImage;
 		int i32TextSizeOfCode = 0;
 		int i32FileEntryPointAddress = 0;
+
+		int i32cfgRVA = 0;
+		int i32cfgPointerToRawData = 0;
+		int i32cfgSizeofRawData = 0;
 
 		int i32RelocRVA = 0;
 		int i32RelocPointerToRawData = 0;
@@ -157,16 +163,17 @@ int main()
 				i32RelocPointerToRawData = pSecH->PointerToRawData;
 				i32RelocSizeofRawData = pSecH->SizeOfRawData;
 			}
+			else if(!strcmp((const char*)pSecH->Name, ".00cfg"))
+			{
+				i32cfgRVA = pSecH->VirtualAddress;
+				i32cfgPointerToRawData = pSecH->PointerToRawData;
+				i32cfgSizeofRawData = pSecH->SizeOfRawData;
+			}
 		}
 
-		for(int i = i32PointerToRawData; i < i32PointerToRawData + i32SizeOfCode; i++)
-		{
-			buf[i] = ~buf[i];
-		}
 
 
-
-		int* ModifiedSizeOfImage = (int*)(pNtH->OptionalHeader.SizeOfImage + 0x3000);
+		int* ModifiedSizeOfImage = (int*)(pNtH->OptionalHeader.SizeOfImage + i32FLSize);
 		int* ModifiedEntryPoint = (int*)pNtH->OptionalHeader.SizeOfImage;
 		WORD* NumberOfSection = (WORD*)(pNtH->FileHeader.NumberOfSections + 0x1);
 
@@ -191,9 +198,9 @@ int main()
 		FLSection.Name[2] = 'L';
 		FLSection.Name[3] = '\x00';
 
-		FLSection.VirtualSize = 0x3000;
+		FLSection.VirtualSize = i32FLSize;
 		FLSection.RVA = i32SizeOfImage;
-		FLSection.SizeOfRawData = 0x3000;
+		FLSection.SizeOfRawData = i32FLSize;
 		FLSection.PoitnerToRawData = stSize;
 		FLSection.POinterToRelocations = 0;
 		FLSection.PointerToLineNumber = 0;
@@ -213,35 +220,71 @@ int main()
 		memcpy((void*)&RvaOfBlock, (void*)&i32RelocPointerToRawData, 4);
 		memcpy((void*)&SizeOfBlock, (void*)&i32RelocPointerToRawDataToRelocSizeOfBlock, 4);
 
-
-		vctRelocationVector.push_back({ RvaOfBlock,SizeOfBlock });
-		while(1)
+		if(i32RelocRVA != 0)
 		{
-			int TempRelocPointerToRawData = 0;
-			memcpy((void*)&TempRelocPointerToRawData, (void*)&buf[SizeOfBlock], 4);
-			i32RelocPointerToRawData += TempRelocPointerToRawData;
-
-			i32RelocPointerToRawDataToRelocSizeOfBlock = i32RelocPointerToRawData + 4;
-
-			int i32TempSizeOfBlock = 0;
-			memcpy((void*)&i32TempSizeOfBlock, (void*)&buf[SizeOfBlock], 4);
-			if(i32TempSizeOfBlock == 0)
-				break;
-			memcpy((void*)&RvaOfBlock, (void*)&i32RelocPointerToRawData, 4);
-			memcpy((void*)&SizeOfBlock, (void*)(&i32RelocPointerToRawDataToRelocSizeOfBlock), 4);
 			vctRelocationVector.push_back({ RvaOfBlock,SizeOfBlock });
-		}
+			while(1)
+			{
+				int TempRelocPointerToRawData = 0;
+				memcpy((void*)&TempRelocPointerToRawData, (void*)&buf[SizeOfBlock], 4);
+				i32RelocPointerToRawData += TempRelocPointerToRawData;
 
+				i32RelocPointerToRawDataToRelocSizeOfBlock = i32RelocPointerToRawData + 4;
+
+				int i32TempSizeOfBlock = 0;
+				memcpy((void*)&i32TempSizeOfBlock, (void*)&buf[SizeOfBlock], 4);
+				if(i32TempSizeOfBlock == 0)
+					break;
+				memcpy((void*)&RvaOfBlock, (void*)&i32RelocPointerToRawData, 4);
+				memcpy((void*)&SizeOfBlock, (void*)(&i32RelocPointerToRawDataToRelocSizeOfBlock), 4);
+				vctRelocationVector.push_back({ RvaOfBlock,SizeOfBlock });
+			}
+		}
 		char cFileTextRva[2] = { 0, };
 		memcpy((void*)&cFileTextRva, (void*)(&i32FileTextRva), 2);
 
+		bool bCheckIsDllorExe = false;
 
+		if((pNtH->FileHeader.Characteristics & 0xf000) == 0x2000)
+		{
+			bCheckIsDllorExe = true;
+		}
 		int i32stSizeCnt = 0;
 
 		buf[stSize + i32stSizeCnt++] = '\x60';
 
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\xc2';
+		if(bCheckIsDllorExe == true)
+		{
+			buf[stSize + i32stSizeCnt++] = '\x8b';
+			buf[stSize + i32stSizeCnt++] = '\xc2';
+		}
+		else
+		{
+			buf[stSize + i32stSizeCnt++] = '\x64';
+			buf[stSize + i32stSizeCnt++] = '\xa1';
+			buf[stSize + i32stSizeCnt++] = '\x18';
+			buf[stSize + i32stSizeCnt++] = '\x0';
+
+			buf[stSize + i32stSizeCnt++] = '\x0';
+			buf[stSize + i32stSizeCnt++] = '\x0';
+			buf[stSize + i32stSizeCnt++] = '\x8b';
+			buf[stSize + i32stSizeCnt++] = '\x40';
+
+			buf[stSize + i32stSizeCnt++] = '\x30';
+			buf[stSize + i32stSizeCnt++] = '\x8b';
+			buf[stSize + i32stSizeCnt++] = '\x40';
+			buf[stSize + i32stSizeCnt++] = '\x0c';
+
+			buf[stSize + i32stSizeCnt++] = '\x8d';
+			buf[stSize + i32stSizeCnt++] = '\x58';
+			buf[stSize + i32stSizeCnt++] = '\x0c';
+			buf[stSize + i32stSizeCnt++] = '\x8b';
+
+			buf[stSize + i32stSizeCnt++] = '\x13';
+			buf[stSize + i32stSizeCnt++] = '\x8b';
+			buf[stSize + i32stSizeCnt++] = '\x42';
+			buf[stSize + i32stSizeCnt++] = '\x18';
+		}
 	//	buf[stSize + i32stSizeCnt++] = '\x18';
 
 		char cChangeEntryPoint[4] = { 0, };
@@ -329,7 +372,7 @@ int main()
 
 		for(int i = stSize + i32stSizeCnt; i < stSize + i32OffsetCnt; i++)
 		{
-			buf[i] = '\x00';
+			buf[i] = '\x90';
 		}
 
 
@@ -461,7 +504,10 @@ int main()
 //				RelocData += vctSection[Section].PoitnerToRawData;
 				RelocData += 2;
 
-				vctParseRelocation.push_back({ Section,{RelocData,DeicdeToRvaOfBlock} });
+				int i32FileRelocOffset = Data + i32RvaOfBlock - vctSection[Section].RVA + vctSection[Section].PoitnerToRawData + 2;
+
+
+				vctParseRelocation.push_back({ Section,{RelocData,i32FileRelocOffset} });
 
 				Start += 2;
 			}
@@ -470,16 +516,19 @@ int main()
 		int cnt = i32OffsetCnt;
 		for(int i = 0; i < vctParseRelocation.size(); i++)
 		{
+
+
 			int RelocData = vctParseRelocation[i].second.first;
-		
+
 			int InputData = RelocData;// +DeicdeToRvaOfBlock;
 			//InputData += BaseAddress;
 
 			char cInputData[4] = { 0, };
 
 			memcpy((void*)&cInputData, (void*)&InputData, 4);
+			int i32FileRelocOffset = vctParseRelocation[i].second.second;
+			char cType = buf[i32FileRelocOffset]&0xf;
 
-	
 
 			buf[stSize + cnt] = '\x8b';
 			buf[stSize + cnt + 1] = '\xd8';
@@ -491,17 +540,36 @@ int main()
 			buf[stSize + cnt + 7] = cInputData[3];
 
 			buf[stSize + cnt + 8] = '\x8b';
-			buf[stSize + cnt + 9] = '\xf3';
+			buf[stSize + cnt + 9] = '\xf0';
 			buf[stSize + cnt + 10] = '\xc1';
 			buf[stSize + cnt + 11] = '\xee';
 			buf[stSize + cnt + 12] = '\x10';
 
-			buf[stSize + cnt + 13] = '\x3e';
-			buf[stSize + cnt + 14] = '\x66';
-			buf[stSize + cnt + 15] = '\x89';
-			buf[stSize + cnt + 16] = '\x33';
+			if(cType != '\x00')
+			{
+				buf[stSize + cnt + 13] = '\x81';
+				buf[stSize + cnt + 14] = '\xc6';
+				buf[stSize + cnt + 15] = cType;
+				buf[stSize + cnt + 16] = '\x00';
+				buf[stSize + cnt + 17] = '\x00';
+				buf[stSize + cnt + 18] = '\x00';
+				buf[stSize + cnt + 19] = '\x3e';
+				buf[stSize + cnt + 20] = '\x66';
+				buf[stSize + cnt + 21] = '\x89';
+				buf[stSize + cnt + 22] = '\x33';
+				cnt += 23;
+			}
+			else
+			{
+				buf[stSize + cnt + 13] = '\x3e';
+				buf[stSize + cnt + 14] = '\x66';
+				buf[stSize + cnt + 15] = '\x89';
+				buf[stSize + cnt + 16] = '\x33';
+				cnt += 17;
+			}
+			
 
-			cnt += 17;
+			
 
 		}
 
@@ -541,7 +609,7 @@ int main()
 		buf[stSize + cnt++] = '\xec';
 		buf[stSize + cnt++] = '\x08';
 		*/
-		
+
 		int i32FLLast = cnt + FLSection.RVA;
 		int i32FLfunctionToEntryPoint = i32EntryPoint - i32FLLast - 5;// -3;
 
@@ -550,8 +618,8 @@ int main()
 		memcpy((void*)&cFLfunctionToEntryPoint, (void*)&i32FLfunctionToEntryPoint, 4);
 
 		 //dll만 로딩할때
-	
-		
+
+
 		buf[stSize + cnt++] = '\xe9';
 
 		buf[stSize + cnt++] = cFLfunctionToEntryPoint[0];
@@ -563,7 +631,17 @@ int main()
 		buf[stSize + cnt++] = '\x00';
 		buf[stSize + cnt++] = '\x00';
 		buf[stSize + cnt++] = '\x01';
-		fwrite(buf, sizeof(char), stSize + 0x3000, fp);
+
+
+
+		for(int i = i32PointerToRawData; i < i32SizeOfCode; i++)
+		{
+			buf[i] = ~buf[i];
+		}
+
+		char* Temp = new char[stSize];
+
+		fwrite(buf, sizeof(char), stSize + i32FLSize, fp);
 		fclose(fp);
 	}
 

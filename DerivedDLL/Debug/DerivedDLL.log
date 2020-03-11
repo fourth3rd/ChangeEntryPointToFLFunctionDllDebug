@@ -1,5 +1,8 @@
-﻿  BaseEx.cpp
+﻿  pch.cpp
+  BaseEx.cpp
   BaseUsing.cpp
+  dllmain.cpp
+  DrivedDLLLib.cpp
   코드를 생성하고 있습니다...
      C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\Debug\DerivedDLL.lib 라이브러리 및 C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\Debug\DerivedDLL.exp 개체를 생성하고 있습니다.
   DerivedDLL.vcxproj -> C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\Debug\DerivedDLL.dll

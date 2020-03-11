@@ -10,7 +10,7 @@ int main()
 	CBaseUsing bu;
 
 	bool b = false;
-	/*
+	
 	printf("=================================\n");
 	printf("Normal Func Test\n");
 	b = TestBaseFuncEx("HELLO LAND!");
@@ -24,8 +24,6 @@ int main()
 	printf("TEST DERIVED CLASS with VF\n");
 	b &= bex.Print("HELLO NEW WORLD!");
 	printf("=================================\n");
-	*/
-	///*
 
 
 	CBaseEx* pUtEunGer = CBaseExEx::GetNewBaseEx();

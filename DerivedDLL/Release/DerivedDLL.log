@@ -1,1 +1,11 @@
-﻿
+﻿  pch.cpp
+  BaseEx.cpp
+  BaseUsing.cpp
+  dllmain.cpp
+  DrivedDLLLib.cpp
+     C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\Release\DerivedDLL.lib 라이브러리 및 C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\Release\DerivedDLL.exp 개체를 생성하고 있습니다.
+  코드를 생성하고 있습니다.
+  Previous IPDB not found, fall back to full compilation.
+  All 38 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  코드를 생성했습니다.
+  DerivedDLL.vcxproj -> C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\Release\DerivedDLL.dll

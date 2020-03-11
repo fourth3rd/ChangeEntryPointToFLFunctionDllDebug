@@ -1,7 +1,7 @@
 ﻿  sw.cpp
 C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(31,19): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
-C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(330,40): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
-C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(424,20): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
-C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(430,21): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
-C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(471,20): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(373,40): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(467,20): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(473,21): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\ChangeEntryPointToFLFunctionDll\sw.cpp(517,20): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
   ChangeEntryPointToFLFunctionDll.vcxproj -> C:\Users\정찬호\source\repos\ChangeEntryPointToFLFunctionDll\Debug\ChangeEntryPointToFLFunctionDll.exe
