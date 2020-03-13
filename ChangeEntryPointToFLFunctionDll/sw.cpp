@@ -22,52 +22,7 @@ typedef struct Section
 	int TempOffset;
 }Section;
 
-int FindMemoryBaseAddress(std::wstring src)
-{
-	int BaseAddress = 0;
-	void* orgPtr = nullptr;
-	void* curPtr = nullptr;
-	wchar_t* strTemp = new wchar_t[src.size()];
-	for(int i = 0; i < src.size(); i++)
-	{
-		*(strTemp + i) = src[i];
-		*(strTemp + i + 1) = '\x00';
-	}
 
-	__asm
-	{
-		mov eax, fs: [0x18]        // TIB
-		mov eax, [eax + 0x30]    // TIB->PEB
-		mov eax, [eax + 0x0C]     // PEB->Ldr
-		lea ebx, [eax + 0x0C]    // Ldr->InLoadOrderLinks
-		mov orgPtr, ebx
-		loadOrderLoop :
-		mov edx, [ebx]            // InLoadOrderLinks->Flink
-			mov curPtr, edx
-			mov edi, [edx + 0x30]   // LDR_DATA_TABLE_ENTRY.BaseDllName.Buffer
-			mov ecx, [edx + 0x18]
-			test edi, edi
-			je loadOrderFailed
-			push strTemp
-			push edi
-			call strcmp
-			add esp, 8
-			mov esi, 0
-			cmp eax, esi
-			je DllFind
-			loadOrderFailed :
-		mov ebx, curPtr
-			mov ebx, [ebx]
-			mov edx, orgPtr
-			cmp ebx, edx
-			jne loadOrderLoop
-			DllFind :
-		mov ecx, [edx + 0x18]
-			mov BaseAddress, ecx
-	}
-
-	return BaseAddress;
-}
 /*
 void Decrypt(int Raw, int VA, int PointerToRawData, int Size)
 {
@@ -84,14 +39,14 @@ void Decrypt(int Raw, int VA, int PointerToRawData, int Size)
 */
 int main()
 {
-	FILE* fp = fopen("MainProgramOriginal.exe", "rb");
+	FILE* fp = fopen("/*Original*/.dll", "rb");
 
 	if(fp)
 	{
 		fseek(fp, 0, SEEK_END);
 		size_t stSize = ftell(fp);
-		
-		int i32FLSize = 0x50000;
+
+		int i32FLSize = 0x6000000;
 
 		char* buf = new char[stSize + i32FLSize];
 
@@ -99,7 +54,7 @@ int main()
 		fread(buf, stSize, 1, fp);
 
 		fclose(fp);
-		fp = fopen(R"(MainProgram.exe)", "wb");
+		fp = fopen(R"(/*Fixed*/.dll)", "wb");
 		fseek(fp, 0, SEEK_SET);
 
 		PIMAGE_DOS_HEADER pDosH;
@@ -133,11 +88,34 @@ int main()
 		int* pModifiedTextCharacteristics = (int*)0xe0000060;
 		int i32FLStart = pDosH->e_lfanew + sizeof(IMAGE_NT_HEADERS);
 		i32FileEntryPointAddress = pDosH->e_lfanew + 4 + sizeof(IMAGE_FILE_HEADER) + 0x10;
+
+		int i32Start = 0;
+		int OriginalImageOfSize = i32SizeOfImage;
+
 		for(int i = 0; i < pNtH->FileHeader.NumberOfSections; i++)
 		{
 			pSecH = (PIMAGE_SECTION_HEADER)((LPBYTE)buf + pDosH->e_lfanew + sizeof(IMAGE_NT_HEADERS) + (i * sizeof(IMAGE_SECTION_HEADER)));
 
 			Section Temp;
+			int i32SectionParse = pDosH->e_lfanew + sizeof(IMAGE_NT_HEADERS) + (i * sizeof(IMAGE_SECTION_HEADER));
+
+			int i32OrigialSize = 0;
+
+			memcpy((void*)&i32OrigialSize, (void*)&buf[i32SectionParse + 0x10], 4);
+
+			if(i == pNtH->FileHeader.NumberOfSections - 1)
+			{
+				i32Start = pSecH->SizeOfRawData + pSecH->PointerToRawData;
+				//i32Start /= 4;
+
+				i32OrigialSize += i32FLSize;
+				memcpy((void*)&buf[i32SectionParse + 0x10], (void*)&i32OrigialSize, 4);
+
+				i32OrigialSize = 0x1000000;
+				memcpy((void*)&buf[i32SectionParse + 0x8], (void*)&i32OrigialSize, 4);
+
+
+			}
 
 			Temp.PoitnerToRawData = pSecH->PointerToRawData;
 			Temp.RVA = pSecH->VirtualAddress;
@@ -171,11 +149,11 @@ int main()
 			}
 		}
 
-
+		int i32RollBackEntryPoint = i32RelocRVA + i32Start - i32RelocPointerToRawData;
 
 		int* ModifiedSizeOfImage = (int*)(pNtH->OptionalHeader.SizeOfImage + i32FLSize);
-		int* ModifiedEntryPoint = (int*)pNtH->OptionalHeader.SizeOfImage;
-		WORD* NumberOfSection = (WORD*)(pNtH->FileHeader.NumberOfSections + 0x1);
+		int* ModifiedEntryPoint = (int*)(i32RelocRVA + i32Start - i32RelocPointerToRawData);
+		WORD* NumberOfSection = (WORD*)(pNtH->FileHeader.NumberOfSections);
 
 		memcpy((void*)&pNtH->OptionalHeader.SizeOfImage, (void*)&ModifiedSizeOfImage, 4);
 		memcpy((void*)&pNtH->OptionalHeader.AddressOfEntryPoint, (void*)&ModifiedEntryPoint, 4);
@@ -192,7 +170,7 @@ int main()
 		memcpy((void*)&buf[0x33c], (void*)&pModifiedTextCharacteristics, 4);
 		*/
 		//buf[0xe6] = '\xa';
-		Section FLSection;
+		/*Section FLSection;
 		FLSection.Name[0] = '.';
 		FLSection.Name[1] = 'F';
 		FLSection.Name[2] = 'L';
@@ -210,6 +188,7 @@ int main()
 
 		memcpy((void*)&buf[i32FLStart], (void*)&FLSection, sizeof(FLSection));
 		i32FLStart += sizeof(IMAGE_SECTION_HEADER);
+		*/
 		std::vector<std::pair<int, int> > vctRelocationVector;
 
 		int RvaOfBlock = 0;
@@ -285,10 +264,10 @@ int main()
 			buf[stSize + i32stSizeCnt++] = '\x42';
 			buf[stSize + i32stSizeCnt++] = '\x18';
 		}
-	//	buf[stSize + i32stSizeCnt++] = '\x18';
+		//	buf[stSize + i32stSizeCnt++] = '\x18';
 
 		char cChangeEntryPoint[4] = { 0, };
-		int i32CheckChangeEntryPoint = FLSection.RVA + 0xf0;
+		int i32CheckChangeEntryPoint = i32RollBackEntryPoint + 0xf0;
 
 		memcpy((void*)&cChangeEntryPoint, (void*)&i32CheckChangeEntryPoint, 4);
 
@@ -314,9 +293,10 @@ int main()
 		buf[stSize + i32stSizeCnt++] = '\xfe';
 		buf[stSize + i32stSizeCnt++] = '\x01';
 
-		buf[stSize + i32stSizeCnt++] = '\xc6';
+		buf[stSize + i32stSizeCnt++] = '\xc6';// 여기가 dll 사용
 		buf[stSize + i32stSizeCnt++] = '\x07';
 		buf[stSize + i32stSizeCnt++] = '\x01';
+
 
 		WORD dwMoveToDecode = 0x100 - i32stSizeCnt;//
 		WORD dwChangeMoveToDecode = dwMoveToDecode - 6;// -3;
@@ -335,7 +315,7 @@ int main()
 
 		buf[stSize + i32stSizeCnt++] = '\x61';
 
-		int i32FLFuncionStart = i32stSizeCnt + FLSection.RVA;//
+		int i32FLFuncionStart = i32stSizeCnt + i32RollBackEntryPoint;
 		int i32ChangeEntryPointToOriginal = i32EntryPoint - i32FLFuncionStart - 5;// -3;
 
 		char cOriginalEntryPoint[4] = { 0, };
@@ -349,59 +329,13 @@ int main()
 		buf[stSize + i32stSizeCnt++] = cOriginalEntryPoint[2];
 		buf[stSize + i32stSizeCnt++] = cOriginalEntryPoint[3];
 
-
-
-		/*
-		buf[stSize + i32stSizeCnt++] = '\x83';
-		buf[stSize + i32stSizeCnt++] = '\xc4';
-		buf[stSize + i32stSizeCnt++] = '\x0c';
-
-		buf[stSize + i32stSizeCnt++] = '\x8b';
-		buf[stSize + i32stSizeCnt++] = '\xec';
-
-		buf[stSize + i32stSizeCnt++] = '\x5d';
-		*/
-		/*std::string strFileName = "DllEntryPointToFLFunction.dll";
-		for(int i = 0; i < strFileName.size(); i += 1)
-		{
-			buf[i32FLStart + 2 * i] = strFileName[i];
-			buf[i32FLStart + 2 * i + 1] = '\x00';
-		}*/
-
 		int i32OffsetCnt = 0x100;
 
 		for(int i = stSize + i32stSizeCnt; i < stSize + i32OffsetCnt; i++)
 		{
-			buf[i] = '\x90';
+			buf[i] = '\x0';
 		}
 
-
-		/*
-		buf[stSize + i32OffsetCnt++] = '\x64';
-		buf[stSize + i32OffsetCnt++] = '\xa1';
-		buf[stSize + i32OffsetCnt++] = '\x18';
-		buf[stSize + i32OffsetCnt++] = '\x0';
-
-		buf[stSize + i32OffsetCnt++] = '\x0';
-		buf[stSize + i32OffsetCnt++] = '\x0';
-		buf[stSize + i32OffsetCnt++] = '\x8b';
-		buf[stSize + i32OffsetCnt++] = '\x40';
-
-		buf[stSize + i32OffsetCnt++] = '\x30';
-		buf[stSize + i32OffsetCnt++] = '\x8b';
-		buf[stSize + i32OffsetCnt++] = '\x40';
-		buf[stSize + i32OffsetCnt++] = '\x0c';
-
-		buf[stSize + i32OffsetCnt++] = '\x8d';
-		buf[stSize + i32OffsetCnt++] = '\x58';
-		buf[stSize + i32OffsetCnt++] = '\x0c';
-		buf[stSize + i32OffsetCnt++] = '\x8b';
-
-		buf[stSize + i32OffsetCnt++] = '\x13';
-		buf[stSize + i32OffsetCnt++] = '\x8b';
-		buf[stSize + i32OffsetCnt++] = '\x42';
-		buf[stSize + i32OffsetCnt++] = '\x18';
-		*/
 		buf[stSize + i32OffsetCnt++] = '\x8b';
 		buf[stSize + i32OffsetCnt++] = '\xd8';
 		buf[stSize + i32OffsetCnt++] = '\x8b';
@@ -452,17 +386,17 @@ int main()
 		buf[stSize + i32OffsetCnt++] = '\x00';
 		buf[stSize + i32OffsetCnt++] = '\x75';
 		buf[stSize + i32OffsetCnt++] = '\xf3';
-//		buf[stSize + i32OffsetCnt++] = '\x00';
-//		buf[stSize + i32OffsetCnt++] = '\x00';
+		//		buf[stSize + i32OffsetCnt++] = '\x00';
+		//		buf[stSize + i32OffsetCnt++] = '\x00';
 
-		/*
-		buf[stSize + 0x5e] = '\xe9';
+				/*
+				buf[stSize + 0x5e] = '\xe9';
 
-		buf[stSize + 0x5f] = '\xd1';
-		buf[stSize + 0x60] = '\x12';
-		buf[stSize + 0x61] = '\xff';
-		buf[stSize + 0x62] = '\xff';
-		*///Jump To Original Entry Point
+				buf[stSize + 0x5f] = '\xd1';
+				buf[stSize + 0x60] = '\x12';
+				buf[stSize + 0x61] = '\xff';
+				buf[stSize + 0x62] = '\xff';
+				*///Jump To Original Entry Point
 
 		for(int i = 0; i < vctRelocationVector.size(); i++)
 		{
@@ -500,9 +434,9 @@ int main()
 
 				int RelocData = i32RvaOfBlock + Data;
 
-	//			RelocData -= vctSection[Section].RVA;
-//				RelocData += vctSection[Section].PoitnerToRawData;
-				//RelocData += 2;
+				//			RelocData -= vctSection[Section].RVA;
+			//				RelocData += vctSection[Section].PoitnerToRawData;
+							//RelocData += 2;
 
 				int i32FileRelocOffset = Data + i32RvaOfBlock - vctSection[Section].RVA + vctSection[Section].PoitnerToRawData;// +2;
 
@@ -518,28 +452,28 @@ int main()
 
 
 
-		buf[stSize + i32OffsetCnt++] = '\xbb';
+		buf[stSize + i32OffsetCnt++] = '\xbb';//relocation 과정 준비
 		buf[stSize + i32OffsetCnt++] = cFileImageBase[0];
 		buf[stSize + i32OffsetCnt++] = cFileImageBase[1];
 		buf[stSize + i32OffsetCnt++] = cFileImageBase[2];
 		buf[stSize + i32OffsetCnt++] = cFileImageBase[3];
 
-		buf[stSize + i32OffsetCnt++] = '\x3b';
-		buf[stSize + i32OffsetCnt++] = '\xc3';
-		buf[stSize + i32OffsetCnt++] = '\x7e';
-		buf[stSize + i32OffsetCnt++] = '\x06';
+		//buf[stSize + i32OffsetCnt++] = '\x3b';
+		//buf[stSize + i32OffsetCnt++] = '\xc3';
+		//buf[stSize + i32OffsetCnt++] = '\x7e';
+		//buf[stSize + i32OffsetCnt++] = '\x06';
 
 		buf[stSize + i32OffsetCnt++] = '\x8b';
 		buf[stSize + i32OffsetCnt++] = '\xc8';
 		buf[stSize + i32OffsetCnt++] = '\x2b';
 		buf[stSize + i32OffsetCnt++] = '\xcb';
-		buf[stSize + i32OffsetCnt++] = '\xeb';
-		buf[stSize + i32OffsetCnt++] = '\x04';//offset
+		//buf[stSize + i32OffsetCnt++] = '\xeb';
+		//buf[stSize + i32OffsetCnt++] = '\x04';//offset
 
-		buf[stSize + i32OffsetCnt++] = '\x8b';
-		buf[stSize + i32OffsetCnt++] = '\xcb';
-		buf[stSize + i32OffsetCnt++] = '\x2b';
-		buf[stSize + i32OffsetCnt++] = '\xc8';
+		//buf[stSize + i32OffsetCnt++] = '\x8b';
+		//buf[stSize + i32OffsetCnt++] = '\xcb';
+		//buf[stSize + i32OffsetCnt++] = '\x2b';
+		//buf[stSize + i32OffsetCnt++] = '\xc8';
 
 		int cnt = i32OffsetCnt;
 		for(int i = 0; i < vctParseRelocation.size(); i++)
@@ -562,12 +496,6 @@ int main()
 				cType[j] = buf[i32FileRelocOffset + j];
 			}
 
-			//memcpy((void*)&cType, (void*)&i32FileRelocOffset, 4);
-
-			char cOffset[4] = { 0 };
-			memcpy((void*)&cOffset, (void*)&vctSection[SSection].RVA, 4);
-
-
 			buf[stSize + cnt++] = '\x8b';
 			buf[stSize + cnt++] = '\xd8';
 			buf[stSize + cnt++] = '\x81';
@@ -589,57 +517,18 @@ int main()
 			buf[stSize + cnt++] = '\x89';
 			buf[stSize + cnt++] = '\x33';
 
-		
-
-			
-
 		}
 
 
-
-
-		/*buf[stSize + cnt++] = '\x8b';// EntryPoint를 바꾸는 부분인데 Write속성이 없어서 작동이 안하는 것 같음
-		buf[stSize + cnt++] = '\xc8';
-
-		buf[stSize + cnt++] = '\x81';
-		buf[stSize + cnt++] = '\xc1';
-		buf[stSize + cnt++] = cChangeEntryPoint[0];
-		buf[stSize + cnt++] = cChangeEntryPoint[1];
-		buf[stSize + cnt++] = cChangeEntryPoint[2];
-		buf[stSize + cnt++] = cChangeEntryPoint[3];
-
-		buf[stSize + cnt++] = '\x33';
-		buf[stSize + cnt++] = '\xdb';
-
-		buf[stSize + cnt++] = '\x81';
-		buf[stSize + cnt++] = '\xc3';
-
-		buf[stSize + cnt++] = cEntryPoint[0];
-		buf[stSize + cnt++] = cEntryPoint[1];
-		buf[stSize + cnt++] = cEntryPoint[2];
-		buf[stSize + cnt++] = cEntryPoint[3];
-
-		buf[stSize + cnt++] = '\x89';
-		buf[stSize + cnt++] = '\x19';
-
-		buf[stSize + cnt++] = '\x61';*/
-
-
 		buf[stSize + cnt++] = '\x61';
-	/*
-		buf[stSize + cnt++] = '\x83';
-		buf[stSize + cnt++] = '\xec';
-		buf[stSize + cnt++] = '\x08';
-		*/
 
-		int i32FLLast = cnt + FLSection.RVA;
+		int i32FLLast = cnt + i32RollBackEntryPoint;
 		int i32FLfunctionToEntryPoint = i32EntryPoint - i32FLLast - 5;// -3;
 
 		char cFLfunctionToEntryPoint[4] = { 0, };
 
 		memcpy((void*)&cFLfunctionToEntryPoint, (void*)&i32FLfunctionToEntryPoint, 4);
 
-		 //dll만 로딩할때
 
 
 		buf[stSize + cnt++] = '\xe9';
