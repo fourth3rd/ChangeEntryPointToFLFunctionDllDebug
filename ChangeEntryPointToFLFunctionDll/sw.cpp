@@ -39,7 +39,7 @@ void Decrypt(int Raw, int VA, int PointerToRawData, int Size)
 */
 int main()
 {
-	FILE* fp = fopen("/*Original*/.dll", "rb");
+	FILE* fp = fopen("RavidSecurityOriginal.dll", "rb");
 
 	if(fp)
 	{
@@ -54,7 +54,7 @@ int main()
 		fread(buf, stSize, 1, fp);
 
 		fclose(fp);
-		fp = fopen(R"(/*Fixed*/.dll)", "wb");
+		fp = fopen(R"(RavidSecurity.dll)", "wb");
 		fseek(fp, 0, SEEK_SET);
 
 		PIMAGE_DOS_HEADER pDosH;
