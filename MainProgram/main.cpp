@@ -1,9 +1,11 @@
 #include<cstdio>
 
 #include "Def.h"
+#include "../DerivedMFCDll/CFLDialogTest.h"
+#include "../DerivedMFCDll/resource.h"
 #include "../DerivedDLL/BaseUsing.h"
 #include "../DerivedDLL/BaseEx.h"
-
+#include "stdafx.h"
 
 int main()
 {
@@ -36,5 +38,18 @@ int main()
 
 	printf("B is %d\n", b);
 	
+
+	if(!AfxWinInit(::GetModuleHandle(NULL), NULL, ::GetCommandLine(), 0))
+	{
+		printf("MFC DLL failed\n");
+	}
+	else
+	{
+		//AFX_MANAGE_STATE(AfxGetStaticModuleState());
+		CFLDialogTest A;
+		A.DoModal();
+	}
+
+
 	return 0;
 }

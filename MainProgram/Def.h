@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdafx.h"
+
 #ifdef BASEDLL_EXPORTS
 #define FLEXPORT __declspec(dllexport)
 #else

@@ -502,9 +502,9 @@ int main()
 
 	//			RelocData -= vctSection[Section].RVA;
 //				RelocData += vctSection[Section].PoitnerToRawData;
-				RelocData += 2;
+				//RelocData += 2;
 
-				int i32FileRelocOffset = Data + i32RvaOfBlock - vctSection[Section].RVA + vctSection[Section].PoitnerToRawData + 2;
+				int i32FileRelocOffset = Data + i32RvaOfBlock - vctSection[Section].RVA + vctSection[Section].PoitnerToRawData;// +2;
 
 
 				vctParseRelocation.push_back({ Section,{RelocData,i32FileRelocOffset} });
@@ -513,11 +513,39 @@ int main()
 			}
 		}
 
+		char cFileImageBase[4] = { 0 };
+		memcpy((void*)&cFileImageBase, (void*)&i32FileBaseAddress, 4);
+
+
+
+		buf[stSize + i32OffsetCnt++] = '\xbb';
+		buf[stSize + i32OffsetCnt++] = cFileImageBase[0];
+		buf[stSize + i32OffsetCnt++] = cFileImageBase[1];
+		buf[stSize + i32OffsetCnt++] = cFileImageBase[2];
+		buf[stSize + i32OffsetCnt++] = cFileImageBase[3];
+
+		buf[stSize + i32OffsetCnt++] = '\x3b';
+		buf[stSize + i32OffsetCnt++] = '\xc3';
+		buf[stSize + i32OffsetCnt++] = '\x7e';
+		buf[stSize + i32OffsetCnt++] = '\x06';
+
+		buf[stSize + i32OffsetCnt++] = '\x8b';
+		buf[stSize + i32OffsetCnt++] = '\xc8';
+		buf[stSize + i32OffsetCnt++] = '\x2b';
+		buf[stSize + i32OffsetCnt++] = '\xcb';
+		buf[stSize + i32OffsetCnt++] = '\xeb';
+		buf[stSize + i32OffsetCnt++] = '\x04';//offset
+
+		buf[stSize + i32OffsetCnt++] = '\x8b';
+		buf[stSize + i32OffsetCnt++] = '\xcb';
+		buf[stSize + i32OffsetCnt++] = '\x2b';
+		buf[stSize + i32OffsetCnt++] = '\xc8';
+
 		int cnt = i32OffsetCnt;
 		for(int i = 0; i < vctParseRelocation.size(); i++)
 		{
 
-
+			int SSection = vctParseRelocation[i].first;
 			int RelocData = vctParseRelocation[i].second.first;
 
 			int InputData = RelocData;// +DeicdeToRvaOfBlock;
@@ -527,47 +555,41 @@ int main()
 
 			memcpy((void*)&cInputData, (void*)&InputData, 4);
 			int i32FileRelocOffset = vctParseRelocation[i].second.second;
-			char cType = buf[i32FileRelocOffset]&0xf;
+			char cType[4] = { 0 };
 
-
-			buf[stSize + cnt] = '\x8b';
-			buf[stSize + cnt + 1] = '\xd8';
-			buf[stSize + cnt + 2] = '\x81';
-			buf[stSize + cnt + 3] = '\xc3';
-			buf[stSize + cnt + 4] = cInputData[0];
-			buf[stSize + cnt + 5] = cInputData[1];
-			buf[stSize + cnt + 6] = cInputData[2];
-			buf[stSize + cnt + 7] = cInputData[3];
-
-			buf[stSize + cnt + 8] = '\x8b';
-			buf[stSize + cnt + 9] = '\xf0';
-			buf[stSize + cnt + 10] = '\xc1';
-			buf[stSize + cnt + 11] = '\xee';
-			buf[stSize + cnt + 12] = '\x10';
-
-			if(cType != '\x00')
+			for(int j = 0; j < 4; j++)
 			{
-				buf[stSize + cnt + 13] = '\x81';
-				buf[stSize + cnt + 14] = '\xc6';
-				buf[stSize + cnt + 15] = cType;
-				buf[stSize + cnt + 16] = '\x00';
-				buf[stSize + cnt + 17] = '\x00';
-				buf[stSize + cnt + 18] = '\x00';
-				buf[stSize + cnt + 19] = '\x3e';
-				buf[stSize + cnt + 20] = '\x66';
-				buf[stSize + cnt + 21] = '\x89';
-				buf[stSize + cnt + 22] = '\x33';
-				cnt += 23;
+				cType[j] = buf[i32FileRelocOffset + j];
 			}
-			else
-			{
-				buf[stSize + cnt + 13] = '\x3e';
-				buf[stSize + cnt + 14] = '\x66';
-				buf[stSize + cnt + 15] = '\x89';
-				buf[stSize + cnt + 16] = '\x33';
-				cnt += 17;
-			}
-			
+
+			//memcpy((void*)&cType, (void*)&i32FileRelocOffset, 4);
+
+			char cOffset[4] = { 0 };
+			memcpy((void*)&cOffset, (void*)&vctSection[SSection].RVA, 4);
+
+
+			buf[stSize + cnt++] = '\x8b';
+			buf[stSize + cnt++] = '\xd8';
+			buf[stSize + cnt++] = '\x81';
+			buf[stSize + cnt++] = '\xc3';
+			buf[stSize + cnt++] = cInputData[0];
+			buf[stSize + cnt++] = cInputData[1];
+			buf[stSize + cnt++] = cInputData[2];
+			buf[stSize + cnt++] = cInputData[3];
+
+			buf[stSize + cnt++] = '\xbe';
+			buf[stSize + cnt++] = cType[0];
+			buf[stSize + cnt++] = cType[1];
+			buf[stSize + cnt++] = cType[2];
+			buf[stSize + cnt++] = cType[3];
+
+			buf[stSize + cnt++] = '\x03';
+			buf[stSize + cnt++] = '\xf1';
+
+			buf[stSize + cnt++] = '\x89';
+			buf[stSize + cnt++] = '\x33';
+
+		
 
 			
 
